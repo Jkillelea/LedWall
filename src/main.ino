@@ -1,3 +1,4 @@
+#include "drop.h"
 #include <Adafruit_NeoPixel.h>
 #include <Arduino.h>
 #include <ArduinoOTA.h>
@@ -5,16 +6,18 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
-#include "drop.h"
+#include <stdint.h>
 
 // WiFi
 #define WIFI_SSID "HumiditySucks24"
 #define WIFI_PASS "freezingpoint!"
 // OTA params
 #define OTA_HOSTNAME "ledwall" // .local
-#define OTA_PORT 8266
-// How many NeoPixels are attached to the Arduino?
-#define LEDS_PER_STRIP 46
+#define OTA_PORT (8266)
+
+// LED strip params
+#define LEDS_PER_STRIP (46)
+#define LED_BASE_BRIGHTNESS (50)
 
 // Declare our NeoPixel strip object:
 Adafruit_NeoPixel LED_STRIPS[] = {
@@ -29,10 +32,9 @@ Adafruit_NeoPixel LED_STRIPS[] = {
 const int NUM_STRIPS = sizeof(LED_STRIPS) / sizeof(LED_STRIPS[0]);
 const int TOTAL_LEDS = NUM_STRIPS * LEDS_PER_STRIP;
 
-#define MAX_DROPS (20)
-Drop     drops[MAX_DROPS];
+#define MAX_DROPS (50)
+Drop drops[MAX_DROPS];
 uint32_t LedBuffer[NUM_STRIPS][LEDS_PER_STRIP];
-
 
 void otaInit() {
     // Port defaults to 8266
@@ -48,8 +50,8 @@ void otaInit() {
         else // U_SPIFFS
             type = "filesystem";
 
-        // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using
-        // SPIFFS.end()
+        // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS
+        // using SPIFFS.end()
 
         Serial.println("Start updating " + type);
         for (Adafruit_NeoPixel &strip : LED_STRIPS) {
@@ -61,9 +63,9 @@ void otaInit() {
     ArduinoOTA.onEnd([]() {
         for (Adafruit_NeoPixel &strip : LED_STRIPS) {
             strip.clear();
-            strip.setBrightness(10);
+            strip.setBrightness(LED_BASE_BRIGHTNESS);
             for (int i = 0; i < LEDS_PER_STRIP; i++)
-                strip.setPixelColor(i, strip.Color(0x00, 0x00, 0xFF));
+                strip.setPixelColor(i, strip.Color(0x00, 0x00, 0xFF)); // blue
             strip.show();
         }
     });
@@ -72,7 +74,7 @@ void otaInit() {
         Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
 
         for (Adafruit_NeoPixel &strip : LED_STRIPS) {
-            strip.setBrightness(10);
+            strip.setBrightness(LED_BASE_BRIGHTNESS);
             int px = LEDS_PER_STRIP - ((LEDS_PER_STRIP * progress) / total);
             strip.setPixelColor(px, strip.Color(0x00, 0xFF, 0x00));
             strip.show();
@@ -91,13 +93,13 @@ void otaInit() {
             Serial.println("Receive Failed");
         else if (error == OTA_END_ERROR)
 
-        for (Adafruit_NeoPixel &strip : LED_STRIPS) {
-            strip.clear();
-            strip.setBrightness(10);
-            for (int i = 0; i < LEDS_PER_STRIP; i++)
-                strip.setPixelColor(i, strip.Color(0xFF, 0x00, 0x00));
-            strip.show();
-        }
+            for (Adafruit_NeoPixel &strip : LED_STRIPS) {
+                strip.clear();
+                strip.setBrightness(LED_BASE_BRIGHTNESS);
+                for (int i = 0; i < LEDS_PER_STRIP; i++)
+                    strip.setPixelColor(i, strip.Color(0xFF, 0x00, 0x00));
+                strip.show();
+            }
         Serial.println("End Failed");
     });
 
@@ -109,14 +111,13 @@ void setup() {
 
     bzero(LedBuffer, TOTAL_LEDS);
 
-    for (Drop &d : drops)
-    {
-        d = Drop(random(0, MAX_DROPS), -random(0, LEDS_PER_STRIP/3));
+    for (Drop &d : drops) {
+        d = Drop(random(0, MAX_DROPS), -random(0, LEDS_PER_STRIP / 3));
     }
 
     for (Adafruit_NeoPixel &strip : LED_STRIPS) {
         strip.begin();
-        strip.setBrightness(127); // 0 - 255
+        strip.setBrightness(LED_BASE_BRIGHTNESS); // 0 - 255
         strip.clear();
         strip.show();
     }
@@ -139,60 +140,44 @@ void setup() {
     }
 }
 
-
 void loop() {
     bzero(LedBuffer, TOTAL_LEDS);
 
-    for (Drop &d : drops)
-    {
+    for (Drop &d : drops) {
         d.run(); // do physics
         int xpos = (int) d.xPosition();
-        int ypos = (int) fabs(d.yPosition());
-        int yvel = (int) fabs(d.yVelocity());
+        int ypos = (int) d.yPosition();
+        int yvel = (int) d.yVelocity();
 
-        if ((xpos < 6) && (d.yPosition() <= 0))
-        {
-            // Adafruit_NeoPixel *strip = &LED_STRIPS[xpos];
-            // strip->setPixelColor(ypos, strip->Color(0xFF, 0xFF, 0xFF));
+        if ((xpos < NUM_STRIPS) && (ypos <= 0)) {
+            Adafruit_NeoPixel *strip = &LED_STRIPS[xpos];
+            strip->setPixelColor(abs(ypos), strip->Color(0xFF, 0xFF, 0xFF));
 
-            // for (int tail = 0; tail < ypos; tail++) {
-            //     int distance = ypos - tail;
-            //     strip->setPixelColor(tail, strip->Color(32 * yvel / (distance*distance),
-            //                                             32 * yvel / (distance*distance),
-            //                                             32 * yvel / (distance*distance)));
-            // }
+            for (int tail = 0; tail < abs(ypos); tail++) {
+                int distance = abs(ypos) - tail;
+                uint32_t color =
+                    strip->Color(32 * abs(yvel) / (distance * distance),
+                                 32 * abs(yvel) / (distance * distance),
+                                 32 * abs(yvel) / (distance * distance));
+                if (distance < LEDS_PER_STRIP) {
+                    strip->setPixelColor(tail, color);
+                } else if (distance == LEDS_PER_STRIP) {
+                    strip->setPixelColor(tail, 0);
+                }
+                // strip->setPixelColor(tail, color);
+            }
 
-            uint32_t *strip = LedBuffer[xpos];
-            strip[ypos] = (0xFF << 16) | (0xFF << 8) | (0xFF << 0);
-            for (int tail = 0; tail < ypos; tail++) {
-                int distance = ypos - tail;
-                strip[tail] += (32 * yvel / (distance*distance) << 16) |
-                               (32 * yvel / (distance*distance) <<  8) |
-                               (32 * yvel / (distance*distance) <<  0);
+            // drop goes off bottom
+            if (ypos < -2 * LEDS_PER_STRIP) {
+                if (xpos < NUM_STRIPS)
+                    strip->clear();
+                d = Drop(random(0, NUM_STRIPS),
+                         random(0, 2 * LEDS_PER_STRIP)); // reset drop
             }
         }
-
-        // drop goes off bottom
-        if (ypos > 2*LEDS_PER_STRIP)
-        {
-            // if (xpos < 6) // clear trail from strip
-            //     LED_STRIPS[xpos].clear();
-
-            d = Drop(random(0, NUM_STRIPS), random(0, 10)); // reset drop
-        }
     }
 
-    for (int s = 0; s < NUM_STRIPS; s++)
-    {
-        for (int led = 0; led < LEDS_PER_STRIP; led++)
-        {
-            LED_STRIPS[s].setPixelColor(led, LedBuffer[s][led]);
-        }
-    }
-
-
-    for (Adafruit_NeoPixel &strip : LED_STRIPS)
-    {
+    for (Adafruit_NeoPixel &strip : LED_STRIPS) {
         strip.show();
     }
 
