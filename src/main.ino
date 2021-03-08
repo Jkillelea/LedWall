@@ -16,7 +16,7 @@
 #define OTA_PORT (8266)
 
 // LED strip params
-#define LEDS_PER_STRIP (46)
+#define LEDS_PER_STRIP      (46)
 #define LED_BASE_BRIGHTNESS (50)
 
 // Declare our NeoPixel strip object:
@@ -34,7 +34,6 @@ const int TOTAL_LEDS = NUM_STRIPS * LEDS_PER_STRIP;
 
 #define MAX_DROPS (50)
 Drop drops[MAX_DROPS];
-uint32_t LedBuffer[NUM_STRIPS][LEDS_PER_STRIP];
 
 void otaInit() {
     // Port defaults to 8266
@@ -106,10 +105,56 @@ void otaInit() {
     ArduinoOTA.begin();
 }
 
-void setup() {
-    Serial.begin(115200);
+void showLeds(void)
+{
+    for (Adafruit_NeoPixel &strip : LED_STRIPS) {
+        strip.show();
+    }
+}
 
-    bzero(LedBuffer, TOTAL_LEDS);
+void renderDrops(void)
+{
+    for (Drop &d : drops)
+    {
+        d.run(); // do physics
+        int xpos = (int) d.xPosition();
+        int ypos = (int) d.yPosition();
+        int yvel = (int) d.yVelocity();
+
+        if ((xpos < NUM_STRIPS) && (ypos <= 0)) {
+            Adafruit_NeoPixel *strip = &LED_STRIPS[xpos];
+            strip->setPixelColor(abs(ypos), strip->Color(0xFF, 0xFF, 0xFF));
+
+            for (int tail = 0; tail < abs(ypos); tail++) {
+                int distance = abs(ypos) - tail;
+                uint32_t color = strip->Color(d.color(0) * abs(yvel) / (distance * distance),
+                                              d.color(1) * abs(yvel) / (distance * distance),
+                                              d.color(2) * abs(yvel) / (distance * distance));
+
+                if (distance < LEDS_PER_STRIP)
+                {
+                    strip->setPixelColor(tail, color);
+                }
+                else
+                {
+                    strip->setPixelColor(tail, 0);
+                }
+            }
+
+            // drop goes off bottom
+            if (ypos < -2 * LEDS_PER_STRIP)
+            {
+                if (xpos < NUM_STRIPS)
+                    strip->clear();
+                d = Drop(random(0, NUM_STRIPS), random(0, 2 * LEDS_PER_STRIP)); // reset drop
+            }
+        }
+    }
+}
+
+void setup()
+{
+    Serial.begin(115200);
 
     for (Drop &d : drops) {
         d = Drop(random(0, MAX_DROPS), -random(0, LEDS_PER_STRIP / 3));
@@ -124,7 +169,8 @@ void setup() {
 
     WiFi.mode(WIFI_STA);
     WiFi.begin(WIFI_SSID, WIFI_PASS);
-    while (!WiFi.isConnected()) {
+    while (!WiFi.isConnected())
+    {
         Serial.println("Waiting on wifi...");
         delay(250);
     }
@@ -134,52 +180,17 @@ void setup() {
 
     otaInit();
 
-    for (Adafruit_NeoPixel &strip : LED_STRIPS) {
+    for (Adafruit_NeoPixel &strip : LED_STRIPS)
+    {
         strip.clear();
         strip.show();
     }
 }
 
 void loop() {
-    bzero(LedBuffer, TOTAL_LEDS);
 
-    for (Drop &d : drops) {
-        d.run(); // do physics
-        int xpos = (int) d.xPosition();
-        int ypos = (int) d.yPosition();
-        int yvel = (int) d.yVelocity();
-
-        if ((xpos < NUM_STRIPS) && (ypos <= 0)) {
-            Adafruit_NeoPixel *strip = &LED_STRIPS[xpos];
-            strip->setPixelColor(abs(ypos), strip->Color(0xFF, 0xFF, 0xFF));
-
-            for (int tail = 0; tail < abs(ypos); tail++) {
-                int distance = abs(ypos) - tail;
-                uint32_t color =
-                    strip->Color(32 * abs(yvel) / (distance * distance),
-                                 32 * abs(yvel) / (distance * distance),
-                                 32 * abs(yvel) / (distance * distance));
-                if (distance < LEDS_PER_STRIP) {
-                    strip->setPixelColor(tail, color);
-                } else if (distance == LEDS_PER_STRIP) {
-                    strip->setPixelColor(tail, 0);
-                }
-                // strip->setPixelColor(tail, color);
-            }
-
-            // drop goes off bottom
-            if (ypos < -2 * LEDS_PER_STRIP) {
-                if (xpos < NUM_STRIPS)
-                    strip->clear();
-                d = Drop(random(0, NUM_STRIPS),
-                         random(0, 2 * LEDS_PER_STRIP)); // reset drop
-            }
-        }
-    }
-
-    for (Adafruit_NeoPixel &strip : LED_STRIPS) {
-        strip.show();
-    }
+    renderDrops();
+    showLeds();
 
     ArduinoOTA.handle();
 
