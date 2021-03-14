@@ -1,9 +1,10 @@
 #include "otafunctions.h"
 #include "config.h"
+#include "logging.h"
 #include "Adafruit_NeoPixel.h"
 #include <ArduinoOTA.h>
 
-extern Adafruit_NeoPixel *LED_STRIPS;
+extern Adafruit_NeoPixel *g_LED_STRIPS;
 
 void otaInit() {
     // Port defaults to 8266
@@ -22,9 +23,9 @@ void otaInit() {
         // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS
         // using SPIFFS.end()
 
-        Serial.println("Start updating " + type);
+        LOG(Log_Info, "Start updating " + type);
         for (int i = 0; i < NUM_STRIPS; i++) {
-            Adafruit_NeoPixel *strip = &LED_STRIPS[i];
+            Adafruit_NeoPixel *strip = &g_LED_STRIPS[i];
             strip->clear();
             strip->show();
         }
@@ -32,7 +33,7 @@ void otaInit() {
 
     ArduinoOTA.onEnd([]() {
         for (int i = 0; i < NUM_STRIPS; i++) {
-            Adafruit_NeoPixel *strip = &LED_STRIPS[i];
+            Adafruit_NeoPixel *strip = &g_LED_STRIPS[i];
             strip->clear();
             strip->setBrightness(LED_BASE_BRIGHTNESS);
             for (int i = 0; i < LEDS_PER_STRIP; i++)
@@ -44,10 +45,10 @@ void otaInit() {
     });
 
     ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-        Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+        LOG(Log_Info, String("Progress:") + (progress / (total / 100)));
 
         for (int i = 0; i < NUM_STRIPS; i++) {
-            Adafruit_NeoPixel *strip = &LED_STRIPS[i];
+            Adafruit_NeoPixel *strip = &g_LED_STRIPS[i];
             strip->setBrightness(LED_BASE_BRIGHTNESS);
             int px = LEDS_PER_STRIP - ((LEDS_PER_STRIP * progress) / total);
             strip->setPixelColor(px, strip->Color(0x00, 0xFF, 0x00));
@@ -56,19 +57,20 @@ void otaInit() {
     });
 
     ArduinoOTA.onError([](ota_error_t error) {
-        Serial.printf("Error[%u]: ", error);
+        LOG(Log_Error, "Error: ");
+        LOG(Log_Error, error);
         if (error == OTA_AUTH_ERROR)
-            Serial.println("Auth Failed");
+            LOG(Log_Error, "Auth Failed");
         else if (error == OTA_BEGIN_ERROR)
-            Serial.println("Begin Failed");
+            LOG(Log_Error, "Begin Failed");
         else if (error == OTA_CONNECT_ERROR)
-            Serial.println("Connect Failed");
+            LOG(Log_Error, "Connect Failed");
         else if (error == OTA_RECEIVE_ERROR)
-            Serial.println("Receive Failed");
+            LOG(Log_Error, "Receive Failed");
         else if (error == OTA_END_ERROR)
             for (int i = 0; i < NUM_STRIPS; i++)
             {
-                Adafruit_NeoPixel *strip = &LED_STRIPS[i];
+                Adafruit_NeoPixel *strip = &g_LED_STRIPS[i];
                 strip->clear();
                 strip->setBrightness(LED_BASE_BRIGHTNESS);
                 for (int i = 0; i < LEDS_PER_STRIP; i++)
@@ -77,7 +79,7 @@ void otaInit() {
                 }
                 strip->show();
             }
-        Serial.println("End Failed");
+        LOG(Log_Error, "End Failed");
     });
 
     ArduinoOTA.begin();

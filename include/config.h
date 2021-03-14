@@ -2,8 +2,8 @@
 #define LEDWALL_CONFIG_H_
 
 // WiFi
-#define WIFI_SSID "HumiditySucks24"
-#define WIFI_PASS "freezingpoint!"
+#define WIFI_SSID ("HumiditySucks24")
+#define WIFI_PASS ("freezingpoint!")
 
 // OTA params
 #define OTA_HOSTNAME "ledwall" // .local
