@@ -3,6 +3,7 @@
 #include "logging.h"
 #include "Adafruit_NeoPixel.h"
 #include <ArduinoOTA.h>
+#include <LittleFS.h>
 
 extern Adafruit_NeoPixel *g_LED_STRIPS;
 
@@ -22,6 +23,7 @@ void otaInit() {
 
         // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS
         // using SPIFFS.end()
+        LittleFS.end();
 
         LOG(Log_Info, "Start updating " + type);
         for (int i = 0; i < NUM_STRIPS; i++) {

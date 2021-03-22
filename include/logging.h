@@ -21,6 +21,8 @@ typedef enum
 #define LOG(level, ...) do {\
 if (DO_LOG && (level >= LOGGER_LEVEL)) { \
     Serial.print("["); \
+    Serial.print(__LINE__); \
+    Serial.print(": "); \
     Serial.print(millis()); \
     Serial.print("]: "); \
     Serial.println(__VA_ARGS__); \

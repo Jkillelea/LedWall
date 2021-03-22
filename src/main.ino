@@ -1,11 +1,12 @@
 #include <Adafruit_NeoPixel.h>
 #include <Arduino.h>
 #include <ArduinoOTA.h>
+#include <ESP8266WebServer.h>
+#include <ESP8266WiFi.h>
+#include <LittleFS.h>
 #include <math.h>
 #include <stdint.h>
 #include <string.h>
-#include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h>
 #include "config.h"
 #include "drop.h"
 #include "droprender.hpp"
@@ -21,9 +22,6 @@ Adafruit_NeoPixel g_LED_STRIPS[] = {
     Adafruit_NeoPixel(LEDS_PER_STRIP, D6, NEO_GRB + NEO_KHZ800),
     Adafruit_NeoPixel(LEDS_PER_STRIP, D7, NEO_GRB + NEO_KHZ800),
 };
-
-#define MAX_DROPS (10)
-Drop g_DROPS[MAX_DROPS];
 
 /* HTTP web server */
 ESP8266WebServer server(80);
@@ -103,9 +101,27 @@ void showLeds(void)
     }
 }
 
+void listFiles(String path)
+{
+    Dir dir = LittleFS.openDir(path);
+    while (dir.next())
+    {
+        if (dir.isFile())
+        {
+            LOG(Log_Info, dir.fileName() + " :size: " + dir.fileSize());
+        }
+        else
+        {
+            LOG(Log_Info, dir.fileName());
+            listFiles(dir.fileName());
+        }
+    }
+}
+
 void setup()
 {
     LOGGER_BEGIN;
+
 
     LOG(Log_Trace, "Init strips");
     for (Adafruit_NeoPixel &strip : g_LED_STRIPS)
@@ -116,10 +132,26 @@ void setup()
         strip.show();
     }
 
-    LOG(Log_Trace, "Generate drops");
-    for (Drop &d : g_DROPS)
+    delay(1000);
+
+    LOG(Log_Trace, "FS init");
+    if (!LittleFS.begin())
     {
-        d = Drop(random(0, MAX_DROPS), random(0, LEDS_PER_STRIP / 3));
+        LOG(Log_Error, "Failed to start FS!");
+    }
+    else
+    {
+        FSInfo info;
+        if (LittleFS.info(info))
+        {
+            LOG(Log_Info, String("totalBytes:    ") + info.totalBytes);
+            LOG(Log_Info, String("usedBytes:     ") + info.usedBytes);
+            LOG(Log_Info, String("blockSize:     ") + info.blockSize);
+            LOG(Log_Info, String("pageSize:      ") + info.pageSize);
+            LOG(Log_Info, String("maxOpenFiles:  ") + info.maxOpenFiles);
+            LOG(Log_Info, String("maxPathLength: ") + info.maxPathLength);
+        }
+        listFiles("/");
     }
 
     WiFi.mode(WIFI_STA);

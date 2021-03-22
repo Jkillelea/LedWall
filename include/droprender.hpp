@@ -32,42 +32,33 @@ class DropRenderer : public Renderer<numStrips, ledsPerStrip>
                     // Adafruit_NeoPixel *strip = &g_LED_STRIPS[strip_num];
                     Adafruit_NeoPixel *strip = this->getStrip(strip_num);
 
-                    LOG(Log_Trace, String("strip: ")  + strip_num);
-                    LOG(Log_Trace, String("ypos: ")   + d.yPosition());
-                    LOG(Log_Trace, String("ypixel: ") + ypixel);
+                    // Set head to full brightness
+                    strip->setPixelColor(ypixel, strip->gamma32(strip->ColorHSV(this->hue)));
 
-                    strip->setPixelColor(ypixel, strip->gamma32(d.color()));
-
-                    for (int tail = 0; tail < ypixel; tail++)
+                    for (int tailpx = 0; tailpx < ypixel; tailpx++)
                     {
-                        int distance = ypixel - tail;
-                        LOG(Log_Trace, String("distance: ") + distance);
-
+                        int distance = ypixel - tailpx;
                         if (distance < ledsPerStrip)
                         {
-                            strip->setPixelColor(tail,
+                            strip->setPixelColor(tailpx,
                                     strip->gamma32(
                                         strip->ColorHSV(this->hue, 255, 10 * yspeed / sqrt(distance))));
                         }
                         else
                         {
-                            strip->setPixelColor(tail, 0);
+                            strip->setPixelColor(tailpx, 0);
                         }
                     }
 
                     // drop goes off bottom
                     if (ypixel > 2 * ledsPerStrip)
                     {
-                        LOG(Log_Trace, String("Resetting drop on strip ") + strip_num);
-
-                        strip->clear();
+                        LOG(Log_Debug, String("Resetting drop on strip ") + strip_num);
 
                         this->hue += UINT16_MAX / 100;
-                        uint32_t color = strip->ColorHSV(this->hue);
                         d = Drop((double) random(0, numStrips),
-                                (double) random(0, 10 * ledsPerStrip),
-                                -9.81,
-                                color);
+                                 (double) random(0, 10 * ledsPerStrip),
+                                -9.81);
                     }
                 }
 
@@ -76,7 +67,7 @@ class DropRenderer : public Renderer<numStrips, ledsPerStrip>
 
     private:
         uint16_t hue;
-        Drop drops[10];
+        Drop drops[25];
 
         int dropYIdktoLED(int ypos)
         {
