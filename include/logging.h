@@ -7,13 +7,14 @@ typedef enum
     Log_Trace   = 0,
     Log_Debug   = 1,
     Log_Info    = 2,
-    Log_Warning = 3,
-    Log_Error   = 4,
-    Log_Fatal   = 5,
+    Log_Message = 3, // should be the lowest level shown to the user by default
+    Log_Warning = 4,
+    Log_Error   = 5,
+    Log_Fatal   = 6,
 } LOG_Level;
 
 #define DO_LOG (true)
-#define LOGGER_LEVEL (Log_Info)
+#define LOGGER_LEVEL (Log_Debug)
 
 #define LOGGER_BEGIN do { if (DO_LOG) {Serial.begin(115200);}} while (0)
 

@@ -5,8 +5,7 @@
 
 class Drop {
     public:
-        Drop(double x0 = 0, double y0 = 0, double gees = -9.81,
-             uint8_t r = 128, uint8_t g = 128, uint8_t b = 128)
+        Drop(double x0 = 0, double y0 = 0, double gees = -9.81, uint32_t colorData = 0x00FFFFFF)
         {
             xpos = x0;
             ypos = y0;
@@ -14,7 +13,7 @@ class Drop {
             yvel = 0;
             gravity = gees;
             lastTimeStampMs = millis();
-            this->setColor(r, g, b);
+            this->setColor(colorData);
         }
 
         void run()
@@ -43,20 +42,14 @@ class Drop {
             return yvel;
         }
 
-        void setColor(uint8_t r, uint8_t g, uint8_t b)
+        void setColor(uint32_t c)
         {
-            this->colors[0] = r;
-            this->colors[1] = g;
-            this->colors[2] = b;
+            this->colorData = c;
         }
 
-        uint8_t color(int idx)
+        uint32_t color(void)
         {
-            int color_count = sizeof(this->colors) / sizeof(this->colors[0]);
-            if (idx < color_count);
-                return this->colors[idx];
-
-            return 255;
+            return this->colorData;
         }
 
     private:
@@ -66,7 +59,7 @@ class Drop {
     double yvel;
     double gravity;
     uint64_t lastTimeStampMs;
-    uint8_t colors[3];
+    uint32_t colorData;
 };
 
 #endif // _DROP_H_
