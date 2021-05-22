@@ -4,17 +4,22 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
 #include <LittleFS.h>
+#include <cstdio>
 #include <math.h>
+#include <memory>
 #include <stdint.h>
 #include <string.h>
 #include "config.h"
 #include "drop.h"
-#include "droprender.hpp"
+#include "droprenderer.hpp"
 #include "otafunctions.h"
 #include "logging.h"
+#include "whitewallrenderer.hpp"
+#include "serveractions.hpp"
 
 // Declare our NeoPixel strip object:
-Adafruit_NeoPixel g_LED_STRIPS[] = {
+Adafruit_NeoPixel g_LED_STRIPS[] =
+{
     Adafruit_NeoPixel(LEDS_PER_STRIP, D1, NEO_GRB + NEO_KHZ800),
     Adafruit_NeoPixel(LEDS_PER_STRIP, D2, NEO_GRB + NEO_KHZ800),
     Adafruit_NeoPixel(LEDS_PER_STRIP, D4, NEO_GRB + NEO_KHZ800),
@@ -24,74 +29,20 @@ Adafruit_NeoPixel g_LED_STRIPS[] = {
 };
 
 /* HTTP web server */
-ESP8266WebServer server(80);
+ESP8266WebServer g_WebServer(80);
 
 /* Rendering engine */
-DropRenderer<NUM_STRIPS, LEDS_PER_STRIP> dropRenderer;
+// DropRenderer<NUM_STRIPS, LEDS_PER_STRIP> dropRenderer;
+// Renderer<NUM_STRIPS, LEDS_PER_STRIP>     *g_LedRenderer;
+// DropRenderer<NUM_STRIPS, LEDS_PER_STRIP> *g_LedRenderer;
+std::shared_ptr<Renderer<NUM_STRIPS, LEDS_PER_STRIP>> g_LedRenderer;
 
-/* server callbacks */
-void handleRoot(void)
+ServerActions_t serverActions[] = 
 {
-    String text = String("Hello, runtime is ") + millis() + " milliseconds\r\n\r\n";
-    server.send(200, "text/plain", text);
-}
+    {"/",    handleRoot},
+    {"/hue", handleHue}
+};
 
-void handleUptime(void)
-{
-    String text = String(millis());
-    server.send(200, "text/plain", text);
-}
-
-
-void handleNotFound(void)
-{
-    server.send(404, "text/plain", "not found\r\n\r\n");
-    LOG(Log_Error, "Server could not find requested path!");
-    switch (server.method())
-    {
-        case HTTP_ANY:
-            LOG(Log_Error, "Method: HTTP_ANY");
-            break;
-        case HTTP_GET:
-            LOG(Log_Error, "Method: HTTP_GET");
-            break;
-        case HTTP_HEAD:
-            LOG(Log_Error, "Method: HTTP_HEAD");
-            break;
-        case HTTP_POST:
-            LOG(Log_Error, "Method: HTTP_POST");
-            break;
-        case HTTP_PUT:
-            LOG(Log_Error, "Method: HTTP_PUT");
-            break;
-        case HTTP_PATCH:
-            LOG(Log_Error, "Method: HTTP_PATCH");
-            break;
-        case HTTP_DELETE:
-            LOG(Log_Error, "Method: HTTP_DELETE");
-            break;
-        case HTTP_OPTIONS:
-            LOG(Log_Error, "Method: HTTP_OPTIONS");
-            break;
-        default:
-            LOG(Log_Error, "Method: UNKNOWN");
-            break;
-    }
-
-    LOG(Log_Error, "== Args ==");
-    for (int i = 0; i < server.args(); i++)
-    {
-        String line = server.argName(i) + " : " + server.arg(i);
-        LOG(Log_Error, line);
-    }
-
-    LOG(Log_Error, "== Headers ==");
-    for (int i = 0; i < server.headers(); i++)
-    {
-        String line = server.headerName(i) + " : " + server.header(i);
-        LOG(Log_Error, line);
-    }
-}
 
 void showLeds(void)
 {
@@ -122,7 +73,6 @@ void setup()
 {
     LOGGER_BEGIN;
 
-
     LOG(Log_Trace, "Init strips");
     for (Adafruit_NeoPixel &strip : g_LED_STRIPS)
     {
@@ -132,7 +82,8 @@ void setup()
         strip.show();
     }
 
-    delay(1000);
+    g_LedRenderer =
+        std::shared_ptr<DropRenderer<NUM_STRIPS, LEDS_PER_STRIP>>(new DropRenderer<NUM_STRIPS, LEDS_PER_STRIP>());
 
     LOG(Log_Trace, "FS init");
     if (!LittleFS.begin())
@@ -168,20 +119,24 @@ void setup()
     LOG(Log_Trace, "OTA init");
     otaInit();
 
-    LOG(Log_Trace, "Webserver callbacks");
-    server.on("/", handleRoot);
-    server.on("/uptime", handleUptime);
-    server.onNotFound(handleNotFound);
-    server.begin();
+    LOG(Log_Trace, "Registering webserver callbacks");
+    g_WebServer.onNotFound(handleNotFound);
+    for (ServerActions_t &action : serverActions)
+    {
+        LOG(Log_Trace,action.path);
+        g_WebServer.on(action.path, action.callback);
+    }
+    g_WebServer.begin();
 
     LOG(Log_Debug, "Setup done");
 }
 
-void loop() {
+void loop()
+{
     LOG(Log_Trace, "Main loop");
 
     /* Physics calculations */
-    dropRenderer.render();
+    g_LedRenderer->render();
 
     /* Write to LEDs */
     showLeds();
@@ -190,9 +145,9 @@ void loop() {
     ArduinoOTA.handle();
 
     /* Web server handling */
-    server.handleClient();
+    g_WebServer.handleClient();
 
     /* Wait */
-    delay(1);
+    // delay(1);
 }
 

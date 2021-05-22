@@ -10,8 +10,7 @@ template<int numStrips, int ledsPerStrip>
 class DropRenderer : public Renderer<numStrips, ledsPerStrip>
 {
     public:
-        DropRenderer()
-            : hue(0)
+        DropRenderer() : Renderer<numStrips, ledsPerStrip>()
         {
             LOG(Log_Trace, "DropRenderer()");
         }
@@ -29,25 +28,28 @@ class DropRenderer : public Renderer<numStrips, ledsPerStrip>
 
                 if (ypixel >= 0 && strip_num < numStrips)
                 {
-                    // Adafruit_NeoPixel *strip = &g_LED_STRIPS[strip_num];
                     Adafruit_NeoPixel *strip = this->getStrip(strip_num);
 
-                    // Set head to full brightness
-                    strip->setPixelColor(ypixel, strip->gamma32(strip->ColorHSV(this->hue)));
-
-                    for (int tailpx = 0; tailpx < ypixel; tailpx++)
+                    for (int tailpx = 0; tailpx <= ypixel; tailpx++)
                     {
                         int distance = ypixel - tailpx;
-                        if (distance < ledsPerStrip)
+                        uint8_t brightness;
+
+                        if (distance == 0)
                         {
-                            strip->setPixelColor(tailpx,
-                                    strip->gamma32(
-                                        strip->ColorHSV(this->hue, 255, 10 * yspeed / sqrt(distance))));
+                            brightness = 255;
+                        }
+                        else if (distance < ledsPerStrip)
+                        {
+                            brightness = (uint8_t) ((float) 10 * yspeed / sqrt(distance));
                         }
                         else
                         {
-                            strip->setPixelColor(tailpx, 0);
+                            brightness = 0;
                         }
+                            strip->setPixelColor(tailpx,
+                                    strip->gamma32(
+                                        strip->ColorHSV(this->hue, 255, brightness)));
                     }
 
                     // drop goes off bottom
@@ -66,7 +68,6 @@ class DropRenderer : public Renderer<numStrips, ledsPerStrip>
         }
 
     private:
-        uint16_t hue;
         Drop drops[25];
 
         int dropYIdktoLED(int ypos)

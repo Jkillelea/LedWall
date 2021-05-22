@@ -9,6 +9,7 @@
 #define OTA_HOSTNAME "ledwall" // .local
 #define OTA_PORT (8266)
 
+#define SERIAL_BAUD (921600)
 
 // LED strip params
 #define LEDS_PER_STRIP      (46)

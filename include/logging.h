@@ -1,6 +1,7 @@
 #ifndef LOGGING_H_
 #define LOGGING_H_
 
+#include "config.h"
 
 typedef enum
 {
@@ -16,7 +17,7 @@ typedef enum
 #define DO_LOG (true)
 #define LOGGER_LEVEL (Log_Debug)
 
-#define LOGGER_BEGIN do { if (DO_LOG) {Serial.begin(115200);}} while (0)
+#define LOGGER_BEGIN do { if (DO_LOG) {Serial.begin(SERIAL_BAUD);}} while (0)
 
 #define LOG(level, ...) do {\
 if (DO_LOG && (level >= LOGGER_LEVEL)) { \

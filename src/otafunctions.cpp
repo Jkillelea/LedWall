@@ -5,7 +5,7 @@
 #include <ArduinoOTA.h>
 #include <LittleFS.h>
 
-extern Adafruit_NeoPixel *g_LED_STRIPS;
+extern Adafruit_NeoPixel g_LED_STRIPS[NUM_STRIPS];
 
 void otaInit() {
     // Port defaults to 8266
@@ -26,36 +26,36 @@ void otaInit() {
         LittleFS.end();
 
         LOG(Log_Info, "Start updating " + type);
-        for (int i = 0; i < NUM_STRIPS; i++) {
-            Adafruit_NeoPixel *strip = &g_LED_STRIPS[i];
-            strip->clear();
-            strip->show();
-        }
+        // for (int i = 0; i < NUM_STRIPS; i++) {
+        //     Adafruit_NeoPixel *strip = &g_LED_STRIPS[i];
+        //     strip->clear();
+        //     strip->show();
+        // }
     });
 
     ArduinoOTA.onEnd([]() {
-        for (int i = 0; i < NUM_STRIPS; i++) {
-            Adafruit_NeoPixel *strip = &g_LED_STRIPS[i];
-            strip->clear();
-            strip->setBrightness(LED_BASE_BRIGHTNESS);
-            for (int i = 0; i < LEDS_PER_STRIP; i++)
-            {
-                strip->setPixelColor(i, strip->Color(0x00, 0x00, 0xFF)); // blue
-            }
-            strip->show();
-        }
+        // for (int i = 0; i < NUM_STRIPS; i++) {
+        //     Adafruit_NeoPixel *strip = &g_LED_STRIPS[i];
+        //     strip->clear();
+        //     strip->setBrightness(LED_BASE_BRIGHTNESS);
+        //     for (int i = 0; i < LEDS_PER_STRIP; i++)
+        //     {
+        //         strip->setPixelColor(i, strip->Color(0x00, 0x00, 0xFF)); // blue
+        //     }
+        //     strip->show();
+        // }
     });
 
     ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
         LOG(Log_Info, String("Progress:") + (progress / (total / 100)));
 
-        for (int i = 0; i < NUM_STRIPS; i++) {
-            Adafruit_NeoPixel *strip = &g_LED_STRIPS[i];
-            strip->setBrightness(LED_BASE_BRIGHTNESS);
-            int px = LEDS_PER_STRIP - ((LEDS_PER_STRIP * progress) / total);
-            strip->setPixelColor(px, strip->Color(0x00, 0xFF, 0x00));
-            strip->show();
-        }
+        // for (int i = 0; i < NUM_STRIPS; i++) {
+        //     Adafruit_NeoPixel *strip = &g_LED_STRIPS[i];
+        //     strip->setBrightness(LED_BASE_BRIGHTNESS);
+        //     int px = LEDS_PER_STRIP - ((LEDS_PER_STRIP * progress) / total);
+        //     strip->setPixelColor(px, strip->Color(0x00, 0xFF, 0x00));
+        //     strip->show();
+        // }
     });
 
     ArduinoOTA.onError([](ota_error_t error) {
@@ -70,17 +70,17 @@ void otaInit() {
         else if (error == OTA_RECEIVE_ERROR)
             LOG(Log_Error, "Receive Failed");
         else if (error == OTA_END_ERROR)
-            for (int i = 0; i < NUM_STRIPS; i++)
-            {
-                Adafruit_NeoPixel *strip = &g_LED_STRIPS[i];
-                strip->clear();
-                strip->setBrightness(LED_BASE_BRIGHTNESS);
-                for (int i = 0; i < LEDS_PER_STRIP; i++)
-                {
-                    strip->setPixelColor(i, strip->Color(0xFF, 0x00, 0x00));
-                }
-                strip->show();
-            }
+            // for (int i = 0; i < NUM_STRIPS; i++)
+            // {
+            //     Adafruit_NeoPixel *strip = &g_LED_STRIPS[i];
+            //     strip->clear();
+            //     strip->setBrightness(LED_BASE_BRIGHTNESS);
+            //     for (int i = 0; i < LEDS_PER_STRIP; i++)
+            //     {
+            //         strip->setPixelColor(i, strip->Color(0xFF, 0x00, 0x00));
+            //     }
+            //     strip->show();
+            // }
         LOG(Log_Error, "End Failed");
     });
 
