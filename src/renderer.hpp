@@ -14,12 +14,15 @@ template<int numStrips, int ledsPerStrip>
 class Renderer
 {
     public:
-        Renderer() : hue(0), sat(0), val(0) { }
+        Renderer() : hue(0), sat(255), val(255) { LOG_TRACE("Renderer()"); }
 
        ~Renderer() { }
 
         // Needs to be marked virtual for overloading
-        virtual void render() { }
+        virtual void render()
+        {
+            LOG_TRACE("Renderer::render()");
+        }
 
         Adafruit_NeoPixel *getStrip(int n)
         {
