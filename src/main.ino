@@ -9,13 +9,17 @@
 #include <memory>
 #include <stdint.h>
 #include <string.h>
+
 #include "config.h"
 #include "drop.h"
+#include "renderer.hpp"
 #include "droprenderer.hpp"
-#include "otafunctions.h"
+#include "globals.hpp"
 #include "logging.h"
-#include "whitewallrenderer.hpp"
+#include "otafunctions.h"
+#include "pixelrenderer.hpp"
 #include "serveractions.hpp"
+#include "whitewallrenderer.hpp"
 
 // Declare our NeoPixel strip object:
 Adafruit_NeoPixel g_LED_STRIPS[] =

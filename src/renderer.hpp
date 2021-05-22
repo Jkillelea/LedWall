@@ -1,5 +1,4 @@
-#ifndef _RENDERER_H_
-#define _RENDERER_H_
+#pragma once
 
 #include "config.h"
 #include "logging.h"
@@ -7,26 +6,46 @@
 #include <memory>
 #include <Adafruit_NeoPixel.h>
 
-// extern Adafruit_NeoPixel g_LED_STRIPS[NUM_STRIPS];
+// Cannot include globals.h without creating recursive includes
+extern Adafruit_NeoPixel g_LED_STRIPS[NUM_STRIPS];
 
+/* Template class declarations must be all in header files for some reason */
 template<int numStrips, int ledsPerStrip>
 class Renderer
 {
     public:
-        Renderer();
+        Renderer() : hue(0), sat(0), val(0) { }
 
-       ~Renderer();
+       ~Renderer() { }
 
         // Needs to be marked virtual for overloading
-        virtual void render();
+        virtual void render() { }
 
-        Adafruit_NeoPixel *getStrip(int n);
+        Adafruit_NeoPixel *getStrip(int n)
+        {
+            if (n < numStrips)
+                return &g_LED_STRIPS[n];
 
-        void setHue(uint16_t h);
+            LOG(Log_Error, "Requested strip outside of bounds! Number:");
+            LOG(Log_Error, n);
+            LOG(Log_Error, " ");
+            return NULL;
+        }
 
-        void setSat(uint16_t s);
+        void setHue(uint16_t h)
+        {
+            this->hue = h;
+        }
 
-        void setVal(uint16_t v);
+        void setSat(uint16_t s)
+        {
+            this->sat = s;
+        }
+
+        void setVal(uint16_t v)
+        {
+            this->val = v;
+        }
 
     protected:
         uint16_t hue;
@@ -34,4 +53,3 @@ class Renderer
         uint16_t val;
 };
 
-#endif // _RENDERER_H_

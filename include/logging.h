@@ -29,4 +29,13 @@ if (DO_LOG && (level >= LOGGER_LEVEL)) { \
     Serial.println(__VA_ARGS__); \
 }} while (0)
 
+
+#define LOG_TRACE(...) LOG(Log_Trace, __VA_ARGS__)
+#define LOG_DEBUG(...) LOG(Log_Debug, __VA_ARGS__)
+#define LOG_INFO(...)  LOG(Log_Info, __VA_ARGS__)
+#define LOG_MSG(...)   LOG(Log_Message, __VA_ARGS__)
+#define LOG_WARN(...)  LOG(Log_Warning, __VA_ARGS__)
+#define LOG_ERROR(...) LOG(Log_Error, __VA_ARGS__)
+#define LOG_FATAL(...) LOG(Log_Fatal, __VA_ARGS__)
+
 #endif // LOGGING_H_
