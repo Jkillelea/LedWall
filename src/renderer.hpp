@@ -37,19 +37,19 @@ class Renderer
             this->hue = h;
         }
 
-        void setSat(uint16_t s)
+        void setSat(uint8_t s)
         {
             this->sat = s;
         }
 
-        void setVal(uint16_t v)
+        void setVal(uint8_t v)
         {
             this->val = v;
         }
 
     protected:
         uint16_t hue;
-        uint16_t sat;
-        uint16_t val;
+        uint8_t  sat;
+        uint8_t  val;
 };
 
