@@ -10,4 +10,5 @@ typedef struct
 
 void handleRoot(void);
 void handleHue(void);
+void handleSat(void);
 void handleNotFound(void);

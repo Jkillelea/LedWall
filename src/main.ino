@@ -36,15 +36,13 @@ Adafruit_NeoPixel g_LED_STRIPS[] =
 ESP8266WebServer g_WebServer(80);
 
 /* Rendering engine */
-// DropRenderer<NUM_STRIPS, LEDS_PER_STRIP> dropRenderer;
-// Renderer<NUM_STRIPS, LEDS_PER_STRIP>     *g_LedRenderer;
-// DropRenderer<NUM_STRIPS, LEDS_PER_STRIP> *g_LedRenderer;
 std::shared_ptr<Renderer<NUM_STRIPS, LEDS_PER_STRIP>> g_LedRenderer;
 
 ServerActions_t serverActions[] = 
 {
     {"/",    handleRoot},
-    {"/hue", handleHue}
+    {"/hue", handleHue},
+    {"/sat", handleSat},
 };
 
 
@@ -76,6 +74,8 @@ void listFiles(String path)
 void setup()
 {
     LOGGER_BEGIN;
+    LOG(Log_Trace, "Boot");
+    delay(100);
 
     LOG(Log_Trace, "Init strips");
     for (Adafruit_NeoPixel &strip : g_LED_STRIPS)
@@ -86,8 +86,8 @@ void setup()
         strip.show();
     }
 
-    g_LedRenderer =
-        std::shared_ptr<DropRenderer<NUM_STRIPS, LEDS_PER_STRIP>>(new DropRenderer<NUM_STRIPS, LEDS_PER_STRIP>());
+    g_LedRenderer = std::shared_ptr<DropRenderer<NUM_STRIPS, LEDS_PER_STRIP>>(
+            new DropRenderer<NUM_STRIPS, LEDS_PER_STRIP>());
 
     LOG(Log_Trace, "FS init");
     if (!LittleFS.begin())
@@ -137,21 +137,40 @@ void setup()
 
 void loop()
 {
-    LOG(Log_Trace, "Main loop");
+    const uint32_t INTERVAL_MS = 15;
+    static uint32_t lastMillis = millis();
+    uint32_t now   = millis();
+    uint32_t delta = 0;
+    if (now > lastMillis)
+    {
+        delta = now - lastMillis;
+    }
 
-    /* Physics calculations */
-    g_LedRenderer->render();
+    LOG_TRACE("Main loop");
 
-    /* Write to LEDs */
-    showLeds();
+    if (delta > INTERVAL_MS)
+    {
+        if (delta > 4 * INTERVAL_MS)
+        {
+            LOG_ERROR(String("Falling behind! Delta ms = ") + delta);
+        }
 
-    /* Upload server handling */
+        lastMillis += INTERVAL_MS;
+
+        /* Physics calculations */
+        g_LedRenderer->render();
+
+        /* Write to LEDs */
+        showLeds();
+    }
+
+    // /* Upload server handling */
     ArduinoOTA.handle();
 
-    /* Web server handling */
+    // /* Web server handling */
     g_WebServer.handleClient();
 
     /* Wait */
-    // delay(1);
+    delay(1);
 }
 

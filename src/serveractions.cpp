@@ -11,11 +11,12 @@ void handleRoot(void)
 
 void handleHue(void)
 {
-    LOG(Log_Debug, "Handling hue");
+    LOG_DEBUG("Handling hue");
     uint16_t h = 0;
+
     if (g_WebServer.hasArg("hue"))
     {
-        LOG(Log_Debug, "Have arg");
+        LOG_DEBUG("Have arg");
         String hueString = g_WebServer.arg("hue");
         sscanf(hueString.c_str(), "%hd", &h);
         LOG(Log_Debug, h);
@@ -24,6 +25,24 @@ void handleHue(void)
 
     g_WebServer.send(200, "text/plain", String(h));
 }
+
+void handleSat(void)
+{
+    LOG_DEBUG("Handling sat");
+    int s = 0;
+
+    if (g_WebServer.hasArg("sat"))
+    {
+        LOG_DEBUG("Have arg");
+        String satString = g_WebServer.arg("sat");
+        sscanf(satString.c_str(), "%d", &s);
+        LOG(Log_Debug, s);
+        g_LedRenderer->setSat(s);
+    }
+
+    g_WebServer.send(200, "text/plain", String(s));
+}
+
 
 void handleNotFound(void)
 {
