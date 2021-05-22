@@ -15,7 +15,7 @@ typedef enum
 } LOG_Level;
 
 #define DO_LOG (true)
-#define LOGGER_LEVEL (Log_Debug)
+#define LOGGER_LEVEL (Log_Warning)
 
 #define LOGGER_BEGIN do { if (DO_LOG) {Serial.begin(SERIAL_BAUD);}} while (0)
 

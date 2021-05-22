@@ -150,12 +150,7 @@ void loop()
 
     if (delta > INTERVAL_MS)
     {
-        if (delta > 4 * INTERVAL_MS)
-        {
-            LOG_ERROR(String("Falling behind! Delta ms = ") + delta);
-        }
-
-        lastMillis += INTERVAL_MS;
+        lastMillis += INTERVAL_MS + 1;
 
         /* Physics calculations */
         g_LedRenderer->render();
