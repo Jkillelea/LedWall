@@ -70,7 +70,6 @@ class DropRenderer : public Renderer<numStrips, ledsPerStrip>
                         {
                             LOG_DEBUG(String("Resetting drop on strip ") + strip_num);
 
-                            this->hue += UINT16_MAX / 100;
                             d = Drop((double) random(0, numStrips),
                                     (double) random(0, 10 * ledsPerStrip),
                                     -9.81);
