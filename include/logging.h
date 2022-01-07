@@ -1,6 +1,8 @@
 #ifndef LOGGING_H_
 #define LOGGING_H_
 
+#include <ESP8266WiFi.h>
+
 #include "config.h"
 
 typedef enum
@@ -14,20 +16,30 @@ typedef enum
     Log_Fatal   = 6,
 } LOG_Level;
 
-#define DO_LOG (true)
-#define LOGGER_LEVEL (Log_Warning)
+#define LOGGER_LEVEL (Log_Debug)
 
 #define LOGGER_BEGIN do { if (DO_LOG) {Serial.begin(SERIAL_BAUD);}} while (0)
 
-#define LOG(level, ...) do {\
-if (DO_LOG && (level >= LOGGER_LEVEL)) { \
+#define LOG(level, ...) if (level >= LOGGER_LEVEL) { \
     Serial.print("["); \
-    Serial.print(__LINE__); \
+    Serial.print(__FILE__); \
     Serial.print(": "); \
-    Serial.print(millis()); \
+    Serial.print(__LINE__); \
     Serial.print("]: "); \
     Serial.println(__VA_ARGS__); \
-}} while (0)
+}
+
+#if 0
+
+#define LOGGER_BEGIN if (true) {\
+\
+}
+
+#define LOG(level, ...) do {\
+if (level >= LOGGER_LEVEL) { \
+}
+
+#endif
 
 
 #define LOG_TRACE(...) LOG(Log_Trace, __VA_ARGS__)

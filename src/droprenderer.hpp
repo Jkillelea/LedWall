@@ -1,12 +1,12 @@
 #ifndef DROP_RENDERER_H_
 #define DROP_RENDERER_H_
+
 #include "Adafruit_NeoPixel.h"
 #include "drop.h"
 #include <cstring>
 #include <renderer.hpp>
 #include <Arduino.h>
 #include <logging.h>
-#include <vector>
 
 template<int numStrips, int ledsPerStrip>
 class DropRenderer : public Renderer<numStrips, ledsPerStrip>
@@ -24,7 +24,7 @@ class DropRenderer : public Renderer<numStrips, ledsPerStrip>
             // For each strip, do calculations for drops on strip and store to pixel buffer
             for (int strip_num = 0; strip_num < numStrips; strip_num++)
             {
-                LOG_TRACE(String("strip ") + strip_num);
+                LOG_TRACE(String("strip ").concat(strip_num));
 
                 LOG_TRACE("memset");
                 memset(this->ledBuffer, 0, sizeof(ledBuffer));
@@ -38,7 +38,7 @@ class DropRenderer : public Renderer<numStrips, ledsPerStrip>
                     {
                         d.run();
                         int ypixel    = dropYIdktoLED((int) d.yPosition());
-                        int yspeed    = abs((int) d.yVelocity());
+                        float yspeed  = (float) abs((int) d.yVelocity());
 
                         if (ypixel >= 0)
                         {
@@ -50,11 +50,11 @@ class DropRenderer : public Renderer<numStrips, ledsPerStrip>
 
                                 if (distance == 0)
                                 {
-                                    brightness = 255;
+                                    brightness = this->val;
                                 }
                                 else if (distance < ledsPerStrip)
                                 {
-                                    brightness = (uint8_t) ((float) 10 * yspeed / sqrt(distance));
+                                    brightness = (uint8_t) ((this->val / 255.0) * 10.0 * yspeed / sqrt(distance));
                                 }
 
                                 this->ledBuffer[tailpx] +=
@@ -62,19 +62,21 @@ class DropRenderer : public Renderer<numStrips, ledsPerStrip>
                                                 this->sat,
                                                 brightness));
                             }
-                            yield();
                         }
+
 
                         // drop goes off bottom
                         if (ypixel > 2 * ledsPerStrip)
                         {
-                            LOG_DEBUG(String("Resetting drop on strip ") + strip_num);
+                            LOG_TRACE(String("Resetting drop on strip ").concat(strip_num));
 
                             d = Drop((double) random(0, numStrips),
                                     (double) random(0, 10 * ledsPerStrip),
                                     -9.81);
                         }
                     }
+
+                    yield();
                 }
 
 

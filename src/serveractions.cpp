@@ -1,7 +1,11 @@
+#include <LittleFS.h>
 #include "serveractions.hpp"
 #include "logging.h"
 #include "globals.hpp"
-#include <LittleFS.h>
+#include "renderer.hpp"
+#include "whitewallrenderer.hpp"
+#include "rollingrainbowrenderer.hpp"
+#include "droprenderer.hpp"
 
 /* server callbacks */
 void handleRoot(void)
@@ -13,15 +17,14 @@ void handleRoot(void)
 
 void handleHue(void)
 {
-    LOG_DEBUG("Handling hue");
+    LOG_TRACE("Handling hue");
     uint16_t h = 0;
 
     if (g_WebServer.hasArg("hue"))
     {
-        LOG_DEBUG("Have arg");
         String hueString = g_WebServer.arg("hue");
         sscanf(hueString.c_str(), "%hd", &h);
-        LOG_DEBUG(h);
+        LOG_DEBUG(String("Hue: ") + h);
         g_LedRenderer->setHue(h);
     }
 
@@ -30,19 +33,54 @@ void handleHue(void)
 
 void handleSat(void)
 {
-    LOG_DEBUG("Handling sat");
+    LOG_TRACE("Handling sat");
     int s = 0;
 
     if (g_WebServer.hasArg("sat"))
     {
-        LOG_DEBUG("Have arg");
         String satString = g_WebServer.arg("sat");
         sscanf(satString.c_str(), "%d", &s);
-        LOG_DEBUG(s);
+        LOG_DEBUG(String("Saturation: ") + s);
         g_LedRenderer->setSat(s);
     }
 
     g_WebServer.send(200, "text/plain", String(s));
+}
+
+void handleBrightness(void)
+{
+    LOG_TRACE("Handling brightness");
+
+    int b = 0;
+
+    if (g_WebServer.hasArg("brightness"))
+    {
+        String brightString = g_WebServer.arg("brightness");
+        sscanf(brightString.c_str(), "%d", &b);
+        LOG_DEBUG(String("Brightness: ") + b);
+        g_LedRenderer->setVal(b);
+    }
+
+    g_WebServer.send(200, "text/plain", String(b));
+}
+
+
+void handleDropRenderer(void)
+{
+    g_LedRenderer = std::shared_ptr<Renderer<NUM_STRIPS, LEDS_PER_STRIP>>(new DropRenderer<NUM_STRIPS, LEDS_PER_STRIP>());
+    g_WebServer.send(200, "text/plain", String(""));
+}
+
+void handleWhitewallRenderer(void)
+{
+    g_LedRenderer = std::shared_ptr<Renderer<NUM_STRIPS, LEDS_PER_STRIP>>(new WhiteWallRenderer<NUM_STRIPS, LEDS_PER_STRIP>());
+    g_WebServer.send(200, "text/plain", String(""));
+}
+
+void handleRainbowRenderer(void)
+{
+    g_LedRenderer = std::shared_ptr<Renderer<NUM_STRIPS, LEDS_PER_STRIP>>(new RollingRainbowRenderer<NUM_STRIPS, LEDS_PER_STRIP>());
+    g_WebServer.send(200, "text/plain", String(""));
 }
 
 
@@ -105,3 +143,4 @@ void handleNotFound(void)
         LOG_ERROR(line);
     }
 }
+

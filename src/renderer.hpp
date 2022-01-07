@@ -14,7 +14,7 @@ template<int numStrips, int ledsPerStrip>
 class Renderer
 {
     public:
-        Renderer() : hue(0), sat(255), val(255) { LOG_TRACE("Renderer()"); }
+        Renderer() : hue(0), sat(0), val(255) { LOG_TRACE("Renderer()"); }
 
        ~Renderer() { }
 

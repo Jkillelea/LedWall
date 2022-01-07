@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "ESP8266WiFiGeneric.h"
 #include "config.h"
 #include "drop.h"
 #include "renderer.hpp"
@@ -20,6 +21,7 @@
 #include "pixelrenderer.hpp"
 #include "serveractions.hpp"
 #include "whitewallrenderer.hpp"
+#include "rollingrainbowrenderer.hpp"
 
 // Declare our NeoPixel strip object:
 Adafruit_NeoPixel g_LED_STRIPS[] =
@@ -38,11 +40,18 @@ ESP8266WebServer g_WebServer(80);
 /* Rendering engine */
 std::shared_ptr<Renderer<NUM_STRIPS, LEDS_PER_STRIP>> g_LedRenderer;
 
+/* WiFi Callback handlers */
+WiFiEventHandler onStationConnectedHandler;
+
 ServerActions_t serverActions[] = 
 {
-    {"/",    handleRoot},
-    {"/hue", handleHue},
-    {"/sat", handleSat},
+    {"/",                  handleRoot},
+    {"/hue",               handleHue},
+    {"/sat",               handleSat},
+    {"/brightness",        handleBrightness},
+    {"/droprenderer",      handleDropRenderer},
+    {"/whitewallrenderer", handleWhitewallRenderer},
+    {"/rainbowrenderer",   handleRainbowRenderer},
 };
 
 
@@ -61,23 +70,45 @@ void listFiles(String path)
     {
         if (dir.isFile())
         {
-            LOG(Log_Info, dir.fileName() + " :size: " + dir.fileSize());
+            LOG_INFO(dir.fileName() + " :size: " + dir.fileSize());
         }
         else
         {
-            LOG(Log_Info, dir.fileName());
+            LOG_INFO(dir.fileName());
             listFiles(dir.fileName());
         }
     }
 }
 
+void onStationConnected(const WiFiEventStationModeConnected& evt)
+{
+    // LOG_WARN(String("WiFi connected to ") + evt.ssid + ", channel " + evt.channel);
+    LOG_WARN(String("Connected to ") + WiFi.SSID());
+    LOG_WARN(String("IP ") + WiFi.localIP().toString());
+
+    LOG_TRACE("OTA init");
+    otaInit();
+
+    LOG_DEBUG("Registering webserver callbacks");
+    g_WebServer.onNotFound(handleNotFound);
+    for (ServerActions_t &action : serverActions)
+    {
+        LOG_DEBUG(action.path);
+        g_WebServer.on(action.path, action.callback);
+    }
+    g_WebServer.begin();
+
+    LOG_DEBUG("Setup done");
+}
+
+
 void setup()
 {
     LOGGER_BEGIN;
-    LOG(Log_Trace, "Boot");
+    LOG_INFO("Boot");
     delay(100);
 
-    LOG(Log_Trace, "Init strips");
+    LOG_TRACE("Init strips");
     for (Adafruit_NeoPixel &strip : g_LED_STRIPS)
     {
         strip.begin();
@@ -86,53 +117,36 @@ void setup()
         strip.show();
     }
 
-    g_LedRenderer = std::shared_ptr<DropRenderer<NUM_STRIPS, LEDS_PER_STRIP>>(
-            new DropRenderer<NUM_STRIPS, LEDS_PER_STRIP>());
+    // g_LedRenderer = std::shared_ptr<DropRenderer<NUM_STRIPS, LEDS_PER_STRIP>>(
+    //         new DropRenderer<NUM_STRIPS, LEDS_PER_STRIP>());
+    g_LedRenderer = std::shared_ptr<Renderer<NUM_STRIPS, LEDS_PER_STRIP>>(new RollingRainbowRenderer<NUM_STRIPS, LEDS_PER_STRIP>());
 
-    LOG(Log_Trace, "FS init");
+    LOG_TRACE("FS init");
     if (!LittleFS.begin())
     {
-        LOG(Log_Error, "Failed to start FS!");
+        LOG_ERROR("Failed to start FS!");
     }
     else
     {
         FSInfo info;
         if (LittleFS.info(info))
         {
-            LOG(Log_Info, String("totalBytes:    ") + info.totalBytes);
-            LOG(Log_Info, String("usedBytes:     ") + info.usedBytes);
-            LOG(Log_Info, String("blockSize:     ") + info.blockSize);
-            LOG(Log_Info, String("pageSize:      ") + info.pageSize);
-            LOG(Log_Info, String("maxOpenFiles:  ") + info.maxOpenFiles);
-            LOG(Log_Info, String("maxPathLength: ") + info.maxPathLength);
+            LOG_INFO(String("totalBytes:    ").concat(info.totalBytes));
+            LOG_INFO(String("usedBytes:     ").concat(info.usedBytes));
+            LOG_INFO(String("blockSize:     ").concat(info.blockSize));
+            LOG_INFO(String("pageSize:      ").concat(info.pageSize));
+            LOG_INFO(String("maxOpenFiles:  ").concat(info.maxOpenFiles));
+            LOG_INFO(String("maxPathLength: ").concat(info.maxPathLength));
         }
         listFiles("/");
     }
 
     WiFi.mode(WIFI_STA);
     WiFi.begin(WIFI_SSID, WIFI_PASS);
-    LOG(Log_Debug, "Waiting on wifi...");
-    while (!WiFi.isConnected())
-    {
-        delay(100);
-    }
+    onStationConnectedHandler = WiFi.onStationModeConnected(&onStationConnected);
 
-    LOG(Log_Warning, String("Connected to ") + WiFi.SSID());
-    LOG(Log_Warning, String("IP ") + WiFi.localIP().toString());
-
-    LOG(Log_Trace, "OTA init");
-    otaInit();
-
-    LOG(Log_Trace, "Registering webserver callbacks");
-    g_WebServer.onNotFound(handleNotFound);
-    for (ServerActions_t &action : serverActions)
-    {
-        LOG(Log_Trace,action.path);
-        g_WebServer.on(action.path, action.callback);
-    }
-    g_WebServer.begin();
-
-    LOG(Log_Debug, "Setup done");
+    // WiFiUDP udp;
+    // udp.beginMulticast(IPAddress interfaceAddr, IPAddress multicast, uint16_t port)
 }
 
 void loop()
@@ -159,10 +173,10 @@ void loop()
         showLeds();
     }
 
-    // /* Upload server handling */
+    /* Upload server handling */
     ArduinoOTA.handle();
 
-    // /* Web server handling */
+    /* Web server handling */
     g_WebServer.handleClient();
 
     /* Wait */
