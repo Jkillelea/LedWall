@@ -1,5 +1,3 @@
-#include <Adafruit_NeoPixel.h>
-#include <Arduino.h>
 #include <ArduinoOTA.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
@@ -42,6 +40,9 @@ std::shared_ptr<Renderer<NUM_STRIPS, LEDS_PER_STRIP>> g_LedRenderer;
 
 /* WiFi Callback handlers */
 WiFiEventHandler onStationConnectedHandler;
+WiFiEventHandler onStationGotIPHandler;
+
+WiFiUDP udp;
 
 ServerActions_t serverActions[] = 
 {
@@ -101,6 +102,13 @@ void onStationConnected(const WiFiEventStationModeConnected& evt)
     LOG_DEBUG("Setup done");
 }
 
+void onStationGotIP(const WiFiEventStationModeGotIP& evt)
+{
+    LOG_WARN(String("IP ") + WiFi.localIP().toString());
+    
+    udp.beginMulticast(WiFi.broadcastIP(), WiFi.localIP(), 8000);
+}
+
 
 void setup()
 {
@@ -144,9 +152,8 @@ void setup()
     WiFi.mode(WIFI_STA);
     WiFi.begin(WIFI_SSID, WIFI_PASS);
     onStationConnectedHandler = WiFi.onStationModeConnected(&onStationConnected);
+    onStationGotIPHandler = WiFi.onStationModeGotIP(&onStationGotIP);
 
-    // WiFiUDP udp;
-    // udp.beginMulticast(IPAddress interfaceAddr, IPAddress multicast, uint16_t port)
 }
 
 void loop()
@@ -155,13 +162,15 @@ void loop()
     static uint32_t lastMillis = millis();
     uint32_t now   = millis();
     uint32_t delta = 0;
+
+    LOG_TRACE("Main loop");
     if (now > lastMillis)
     {
         delta = now - lastMillis;
     }
 
-    LOG_TRACE("Main loop");
 
+    // Rendering
     if (delta > INTERVAL_MS)
     {
         lastMillis += INTERVAL_MS + 1;
@@ -171,6 +180,9 @@ void loop()
 
         /* Write to LEDs */
         showLeds();
+
+        udp.beginPacketMulticast(WiFi.broadcastIP(), 8000, WiFi.localIP());
+        udp.write("asdfasdfasdf");
     }
 
     /* Upload server handling */
